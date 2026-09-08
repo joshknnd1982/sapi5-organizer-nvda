@@ -25,6 +25,10 @@
 <p>Choosing an engine immediately narrows the language list, and choosing a language immediately narrows the variant list. Choosing a variant selects that voice, and NVDA's own Voice combo box updates to match. It works the other way round too: change the Voice combo box and the three new combo boxes follow.</p>
 <p>The controls appear only while the <em>Microsoft Speech API version 5 (32 bit)</em> or <em>Microsoft Speech API version 5 (64 bit)</em> synthesizer is selected. With any other synthesizer, NVDA's Speech settings are exactly as they always were.</p>
 
+<h2>Every engine, not just some</h2>
+<p>SAPI5 publishes voices in two different ways. Some voices have a registry key of their own. Others are produced at run time by a token enumerator: a COM object registered under TokenEnums that invents its voices when SAPI asks for them, so those voices have no registry keys at all. On a well stocked machine the second kind can easily outnumber the first.</p>
+<p>SAPI5 Organizer covers both, working out the engine behind a voice from the container its id sits in rather than from a registry key that may not exist. Every voice is attributed to the engine that actually provides it, so there is no catch-all "other" group, and an engine registered in more than one voice category is listed once rather than twice.</p>
+
 <h2>Saving your settings</h2>
 <p>The three controls are ordinary NVDA driver settings, so they behave like every other speech setting:</p>
 <ul>

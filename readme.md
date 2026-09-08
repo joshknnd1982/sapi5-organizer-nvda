@@ -87,23 +87,48 @@ Rate and Volume. That is why they save with the configuration, follow
 configuration profiles, and vanish for other synthesizers without any extra
 work.
 
-The catalogue is built by reading the SAPI token registry rather than by talking
-to COM. Enumerating voices through `SAPI.SPVoice` only ever reveals voices of
-the calling process' own bitness, so a 64 bit NVDA could never see 32 bit only
-engines that way, and instantiating an unknown third party engine merely to
-interrogate it is slow and can hang. The add-on therefore scans:
+### The two kinds of SAPI5 voice
+
+SAPI5 publishes voices in two quite different ways, and an add-on that only
+understands the first will miss most of the voices on a well stocked machine:
+
+* **Static tokens** live in the registry under `...\Voices\Tokens`. Each is a key
+  describing one voice, naming its engine through a `CLSID` value.
+* **Token enumerators** live under `...\Voices\TokenEnums`. Each is a single key
+  holding nothing but a friendly name and the class id of a COM object, and that
+  object invents its voices at run time. Those voices have **no registry keys at
+  all**. On the machine this was developed against they account for 473 of the
+  725 available voices, across sixteen engines.
+
+The engine behind a voice is therefore resolved from the **container its id sits
+in**, not from a token key that may not exist. A voice under
+`TokenEnums\<engine>\` belongs to that enumerator, whose friendly name and class
+id are read from the enumerator's own key; a voice in a `Tokens` store is grouped
+by the class id in its own key, because one such store holds the voices of many
+unrelated engines. Every voice therefore lands in a real, named engine, and there
+is no catch-all group.
+
+Engines are identified by their COM class id, which is the truest identity an
+engine has, so an engine registered in more than one voice category is listed
+once rather than twice. Labels come from the friendly name in the registry, or
+the vendor name that users recognise; when one vendor ships more than one engine,
+the server file name is appended so the two can be told apart.
+
+The catalogue itself is built from the registry, which is scanned across:
 
 * both the **32 bit** and the **64 bit** registry views;
 * both `HKEY_LOCAL_MACHINE` and `HKEY_CURRENT_USER`;
-* both the `Speech` (classic SAPI5) and `Speech_OneCore` categories.
+* the `Speech` (classic SAPI5), `Speech_OneCore` and `Speech Server` (Microsoft
+  Speech Platform) categories.
 
-Voices are grouped by their engine's COM class id, which is the truest identity
-an engine has, and labelled with the vendor name that users actually recognise.
-When one vendor ships more than one engine, the engine's server file name is
-appended so the two can be told apart. Nothing is hard coded: vendors, class
-ids, install paths and languages are all read from whatever happens to be
-registered, and every one of those fields is treated as optional, because plenty
-of third party engines omit them.
+Because enumerator generated voices cannot be found that way, the voice index
+additionally asks SAPI itself for its voice list when you open the report. That
+is deliberately kept off NVDA's start up path: the combo boxes take their voices
+from the driver and only need the registry to say which engine each belongs to.
+
+Nothing is hard coded. Vendors, class ids, install paths and languages are all
+read from whatever happens to be registered, and every one of those fields is
+treated as optional, because plenty of third party engines omit them.
 
 The list of *selectable* voices always comes from the running driver itself, not
 from the registry, because only the driver knows what its own process can really

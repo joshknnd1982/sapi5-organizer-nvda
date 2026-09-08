@@ -149,7 +149,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _showIndex(self):
 		try:
-			showIndexDialog(driverPatch.getIndex(), lambda: driverPatch.getIndex(refresh=True))
+			showIndexDialog(driverPatch.getFullIndex(), lambda: driverPatch.getFullIndex(refresh=True))
 		except Exception:
 			log.error(f"{LOG_PREFIX}could not open the index dialog", exc_info=True)
 
@@ -169,7 +169,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_rescan(self, gesture):
 		import ui
 
-		index = driverPatch.getIndex(refresh=True)
+		index = driverPatch.getFullIndex(refresh=True)
 		synth = synthDriverHandler.getSynth()
 		if getattr(synth, "name", None) in driverPatch.SAPI5_DRIVERS:
 			driverPatch.invalidateModel(synth)
@@ -188,7 +188,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_logIndex(self, gesture):
 		import ui
 
-		log.info(f"{LOG_PREFIX}full index report follows.\n{buildTextReport(driverPatch.getIndex())}")
+		log.info(f"{LOG_PREFIX}full index report follows.\n{buildTextReport(driverPatch.getFullIndex())}")
 		# Translators: Reported when the report has been written to the NVDA log.
 		ui.message(_("SAPI5 voice index written to the NVDA log."))
 

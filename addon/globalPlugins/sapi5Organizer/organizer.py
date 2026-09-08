@@ -23,15 +23,12 @@ from collections import OrderedDict
 
 from logHandler import log
 
-from .sapiIndex import LOG_PREFIX
+from .sapiIndex import LOG_PREFIX, splitTokenId
 
 try:
 	import languageHandler
 except ImportError:  # pragma: no cover - only happens outside NVDA.
 	languageHandler = None
-
-#: Engine key used for voices that the registry index did not describe.
-UNKNOWN_ENGINE_KEY = "unindexed"
 
 #: Language code used for voices that declare no language at all.
 UNKNOWN_LANGUAGE = "unknown"
@@ -58,21 +55,22 @@ def _normalizeLanguage(code):
 	return str(code).replace("-", "_")
 
 
-def _variantLabel(displayName, vendor):
+def _variantLabel(displayName, prefixes):
 	"""Shorten a voice's name for the variant list.
 
-	Voice descriptions usually repeat the vendor, for example
-	``BestSpeech Alien - English (Classic 1994)``. Dropping the vendor leaves a
-	label that is much quicker to listen through, since the engine has already
-	been chosen in its own combo box. The full name is kept whenever trimming
-	would leave nothing useful behind.
+	Voice descriptions usually repeat the engine or vendor, for example
+	``BestSpeech Alien - English (Classic 1994)`` or ``Nokia Klatt Arabic male``.
+	Dropping that prefix leaves a label that is much quicker to listen through,
+	since the engine has already been chosen in its own combo box. Prefixes are
+	tried longest first, and the full name is kept whenever trimming would leave
+	nothing useful behind.
 	"""
 	name = (displayName or "").strip()
-	if not vendor:
-		return name
-	vendor = vendor.strip()
-	if vendor and name.lower().startswith(vendor.lower()):
-		trimmed = name[len(vendor):].lstrip(" -–—:,")
+	for prefix in prefixes or ():
+		prefix = (prefix or "").strip()
+		if not prefix or not name.lower().startswith(prefix.lower()):
+			continue
+		trimmed = name[len(prefix):].lstrip(" -–—:,")
 		if trimmed:
 			return trimmed
 	return name
@@ -213,22 +211,30 @@ def buildModel(availableVoices, index, view):
 		return model
 	# engine key -> (label, OrderedDict of language -> list of ModelVoice)
 	collected = OrderedDict()
-	unindexed = 0
+	unresolved = 0
 	for voiceId, voiceInfo in availableVoices.items():
 		try:
-			token = index.lookupToken(voiceId, preferredView=view)
-			engine = index.engineForToken(token)
+			engine = index.resolveEngine(voiceId, view)
 			if engine is not None:
 				engineKey = engine.key
 				engineLabel = engine.label
-				vendor = engine.vendor
+				prefixes = engine.labelPrefixes()
 			else:
-				unindexed += 1
-				engineKey = UNKNOWN_ENGINE_KEY
-				# Translators: Engine name for voices the add-on could not identify.
-				engineLabel = _("Other voices")
-				vendor = None
-				log.debug(f"{LOG_PREFIX}voice {voiceId!r} is not in the registry index")
+				# Only reachable for a malformed voice id. File it under the
+				# container it came from, which is still a real grouping; there
+				# is deliberately no bucket of leftovers.
+				unresolved += 1
+				containerPath, leaf = splitTokenId(voiceId)
+				engineKey = (
+					f"container:{containerPath.lower()}" if containerPath else f"voice:{str(voiceId).lower()}"
+				)
+				engineLabel = splitTokenId(containerPath)[1] or containerPath or str(voiceId)
+				prefixes = ()
+				log.warning(
+					f"{LOG_PREFIX}voice {voiceId!r} names no identifiable engine; "
+					f"filed under {engineLabel!r}"
+				)
+			token = index.lookupToken(voiceId, preferredView=view)
 			displayName = getattr(voiceInfo, "displayName", None) or (token.name if token else None) or str(voiceId)
 			language = _normalizeLanguage(
 				getattr(voiceInfo, "language", None) or (token.primaryLanguage if token else None)
@@ -236,7 +242,7 @@ def buildModel(availableVoices, index, view):
 			voice = ModelVoice(
 				tokenId=voiceId,
 				displayName=displayName,
-				variantLabel=_variantLabel(displayName, vendor),
+				variantLabel=_variantLabel(displayName, prefixes),
 				engineKey=engineKey,
 				language=language,
 			)
@@ -257,10 +263,10 @@ def buildModel(availableVoices, index, view):
 			voices = sorted(languages[language], key=lambda voice: voice.variantLabel.lower())
 			modelEngine.languages[language] = OrderedDict((voice.tokenId, voice) for voice in voices)
 		model.engines[engineKey] = modelEngine
-	if unindexed:
+	if unresolved:
 		log.warning(
-			f"{LOG_PREFIX}{unindexed} voice(s) reported by the driver were not found in the "
-			"registry index and were grouped together; see the debug log for their ids"
+			f"{LOG_PREFIX}{unresolved} voice(s) named no identifiable engine and were filed "
+			"under their container; see the log above for their ids"
 		)
-	log.debug(f"{LOG_PREFIX}model for the {view} bit driver: {model.describe()}")
+	log.info(f"{LOG_PREFIX}organised the {view} bit driver's voices. {model.describe()}")
 	return model

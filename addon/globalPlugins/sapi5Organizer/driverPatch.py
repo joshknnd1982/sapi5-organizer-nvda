@@ -57,12 +57,31 @@ _settings = None
 
 
 def getIndex(refresh=False):
-	"""The shared registry index, built on first use."""
+	"""The shared index, built on first use.
+
+	Registry only, so it is cheap enough for NVDA's start up. That is all the
+	Speech settings combo boxes need: the voices themselves come from the driver,
+	and this only has to say which engine each of them belongs to.
+	"""
 	global _index
 	if _index is None or refresh:
 		log.debug(f"{LOG_PREFIX}building the registry index (refresh={refresh})")
-		_index = sapiIndex.buildIndex()
+		_index = sapiIndex.buildIndex(includeGeneratedVoices=False)
 	return _index
+
+
+def getFullIndex(refresh=False):
+	"""The complete catalogue, for the voice index report.
+
+	Additionally asks SAPI for the voices its token enumerators generate, which
+	have no registry keys and so cannot be found any other way. Done on demand
+	rather than at start up, because it loads the SAPI runtime.
+	"""
+	index = getIndex(refresh=refresh)
+	if not getattr(index, "generatedVoicesLoaded", False):
+		log.debug(f"{LOG_PREFIX}asking SAPI for the voices its token enumerators generate")
+		sapiIndex.addGeneratedVoices(index)
+	return index
 
 
 def makeSettings():
