@@ -573,14 +573,56 @@ def _refreshSettingsRing():
 # --- The Speech settings panel ----------------------------------------------
 
 
-def patchSettingsDialog():
-	"""Make the three combo boxes refresh one another.
+def _refreshChoiceControl(container, driver, settingId):
+	"""Replace the contents of one of our combo boxes from the driver.
 
-	NVDA repopulates the other controls of the Speech panel only when the
-	*voice* changes. Without this, choosing an engine would leave the language
-	and variant lists showing the previous engine's contents. The patch is
-	scoped to this add-on's settings on a SAPI5 driver, so every other
-	synthesizer and setting behaves exactly as it always did.
+	NVDA's own refresh cannot do this. ``AutoSettingsMixin._updateValueForControl``
+	changes a combo box's *selection* only, and it looks the new selection up in
+	``container._<id>s``, the list of options captured once when the control was
+	first built. It never calls ``SetItems``. That is fine for NVDA's own string
+	settings, whose contents never change, but the entire point of these three is
+	that each one narrows the next, so the items have to be replaced by hand.
+
+	``container._<id>s`` is rewritten alongside the control, because NVDA maps the
+	user's next selection back to a value by indexing that list; leaving it stale
+	would silently select the wrong voice.
+	"""
+	combo = getattr(container, f"{settingId}List", None)
+	if combo is None:
+		log.debug(f"{LOG_PREFIX}no {settingId} control to refresh")
+		return False
+	try:
+		options = list(getattr(driver, _choicesPropertyName(settingId)).values())
+	except Exception:
+		log.error(f"{LOG_PREFIX}could not read the choices for {settingId}", exc_info=True)
+		return False
+	try:
+		setattr(container, f"_{settingId}s", options)
+		combo.SetItems([option.displayName for option in options])
+		identifiers = [option.id for option in options]
+		current = getattr(driver, settingId, None)
+		if current in identifiers:
+			combo.SetSelection(identifiers.index(current))
+		elif options:
+			combo.SetSelection(0)
+		log.debug(
+			f"{LOG_PREFIX}refreshed the {settingId} combo box: {len(options)} item(s), "
+			f"showing {current!r}"
+		)
+		return True
+	except Exception:
+		log.error(f"{LOG_PREFIX}could not refresh the {settingId} combo box", exc_info=True)
+		return False
+
+
+def patchSettingsDialog():
+	"""Make the three combo boxes narrow one another in the Speech panel.
+
+	Two things are missing from NVDA for this to work. It only refreshes the
+	panel at all when the *voice* changes, and even then the refresh cannot
+	change what a combo box contains. Both are handled here, and only for this
+	add-on's settings on a SAPI5 driver, so every other synthesizer and setting
+	behaves exactly as it always did.
 	"""
 	try:
 		import gui.settingsDialogs as settingsDialogs
@@ -599,14 +641,28 @@ def patchSettingsDialog():
 		original(self, evt)
 		try:
 			settingId = getattr(getattr(self, "setting", None), "id", None)
-			if settingId not in SETTING_IDS:
+			# A voice chosen from NVDA's own Voice combo box may belong to a
+			# different engine, so that has to narrow the three lists as well.
+			if settingId not in SETTING_IDS and settingId != "voice":
 				return
-			if getattr(getattr(self, "driver", None), "name", None) not in SAPI5_DRIVERS:
+			driver = getattr(self, "driver", None)
+			if getattr(driver, "name", None) not in SAPI5_DRIVERS:
 				return
-			update = getattr(getattr(self, "container", None), "updateDriverSettings", None)
-			if callable(update):
-				log.debug(f"{LOG_PREFIX}refreshing the Speech panel after {settingId} changed")
-				update(changedSetting=settingId)
+			container = getattr(self, "container", None)
+			if container is None:
+				return
+			log.debug(f"{LOG_PREFIX}refreshing the Speech panel after {settingId} changed")
+			if settingId != "voice":
+				# NVDA refreshes the panel itself when the voice changes, but for
+				# any other setting it does nothing at all.
+				update = getattr(container, "updateDriverSettings", None)
+				if callable(update):
+					update(changedSetting=settingId)
+			# NVDA's refresh only moves selections about, so replace the contents
+			# of every list this change narrows.
+			for dependent in SETTING_IDS:
+				if dependent != settingId:
+					_refreshChoiceControl(container, driver, dependent)
 		except Exception:
 			log.error(f"{LOG_PREFIX}could not refresh the Speech panel", exc_info=True)
 

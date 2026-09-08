@@ -87,6 +87,17 @@ Rate and Volume. That is why they save with the configuration, follow
 configuration profiles, and vanish for other synthesizers without any extra
 work.
 
+Two things had to be added for the lists to narrow one another. NVDA refreshes
+the Speech panel only when the *voice* changes, and even then its refresh moves
+selections about rather than changing what a combo box contains:
+`AutoSettingsMixin._updateValueForControl` looks the new selection up in the
+option list captured when the control was first built, and never calls
+`SetItems`. That is fine for NVDA's own string settings, whose contents never
+change, but it is the whole point of these three. The add-on therefore refreshes
+the panel after any of its settings change, and replaces the items of every list
+the change narrows, keeping the panel's own `_<id>s` option list in step so that
+the user's next selection still maps to the right voice.
+
 ### The two kinds of SAPI5 voice
 
 SAPI5 publishes voices in two quite different ways, and an add-on that only
