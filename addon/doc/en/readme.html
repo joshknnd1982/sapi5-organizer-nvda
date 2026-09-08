@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SAPI5 Organizer</title>
+</head>
+<body>
+<h1>SAPI5 Organizer</h1>
+<p>An NVDA add-on that turns one unmanageably long list of SAPI5 voices into three short, meaningful ones: SAPI engine, SAPI language and SAPI voice variant.</p>
+<ul>
+<li>Author: Josh Kennedy &lt;joshknnd1982@gmail.com&gt;</li>
+<li>GitHub: <a href="https://github.com/joshknnd1982">https://github.com/joshknnd1982</a></li>
+<li>Requires: NVDA 2026.1 or later</li>
+<li>Licence: GNU General Public License version 2</li>
+</ul>
+
+<h2>What it does</h2>
+<p>If you have several SAPI5 engines installed, NVDA's Voice combo box in Speech settings becomes a single flat list of every voice from every engine, in every language. On a well stocked machine that can be hundreds of entries.</p>
+<p>SAPI5 Organizer indexes every SAPI5 voice on the system and adds three cascading combo boxes to NVDA's existing Speech settings category:</p>
+<ul>
+<li><strong>SAPI engine</strong>: every SAPI5 engine that provides at least one voice the current synthesizer can load.</li>
+<li><strong>SAPI language</strong>: only the languages provided by the engine you just chose.</li>
+<li><strong>SAPI voice variant</strong>: only the voices of that engine, in that language.</li>
+</ul>
+<p>Choosing an engine immediately narrows the language list, and choosing a language immediately narrows the variant list. Choosing a variant selects that voice, and NVDA's own Voice combo box updates to match. It works the other way round too: change the Voice combo box and the three new combo boxes follow.</p>
+<p>The controls appear only while the <em>Microsoft Speech API version 5 (32 bit)</em> or <em>Microsoft Speech API version 5 (64 bit)</em> synthesizer is selected. With any other synthesizer, NVDA's Speech settings are exactly as they always were.</p>
+
+<h2>Saving your settings</h2>
+<p>The three controls are ordinary NVDA driver settings, so they behave like every other speech setting:</p>
+<ul>
+<li>pressing OK or Apply in the Settings dialog stores them;</li>
+<li>NVDA+control+c saves them permanently, so they survive a restart;</li>
+<li>each configuration profile remembers its own selection, so you can make a profile per engine or per language if you prefer to work that way.</li>
+</ul>
+
+<h2>The voice index</h2>
+<p>NVDA menu, Tools, SAPI5 voice index opens a report of the complete catalogue, which is broader than what any single synthesizer can offer. For each voice it shows the voice name, the engine that provides it, the language or languages it declares, whether that engine is registered for 32 bit programs, 64 bit programs or both, the SAPI category, and the registry key the voice comes from.</p>
+<p>The list can be filtered as you type, and the whole report can be copied to the clipboard, saved to a text file, or written to the NVDA log. An engine shown as <em>not registered</em> is worth knowing about: it usually explains a voice that appears in a list but refuses to speak, because the engine was uninstalled without its voices being removed.</p>
+
+<h2>Commands</h2>
+<p>The add-on ships no assigned gestures, so it cannot clash with anything you already use. To assign one, open NVDA menu, Preferences, Input gestures, and look under the SAPI5 Organizer category:</p>
+<ul>
+<li>show the SAPI5 voice index;</li>
+<li>rescan the system for SAPI5 engines, languages and voices;</li>
+<li>write the full voice index to the NVDA log;</li>
+<li>report the current SAPI5 engine, language and voice variant.</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+<p>The add-on logs in detail. Set NVDA menu, Preferences, Settings, General, Logging level to Debug, restart NVDA, then open the log with NVDA+f1. Every line the add-on writes is prefixed with <code>SAPI5 Organizer:</code>, including one line per voice token discovered, the engine each voice was grouped into, and every voice change the three combo boxes make.</p>
+
+<h2>Licence</h2>
+<p>Copyright (C) 2026 Josh Kennedy. Released under the GNU General Public License version 2.</p>
+</body>
+</html>

@@ -1,0 +1,7 @@
+__pycache__/
+*.py[cod]
+*.bak
+*.orig
+.vscode/
+.idea/
+Thumbs.db
