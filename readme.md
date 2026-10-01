@@ -7,7 +7,7 @@ variant**.
 * Author: Josh Kennedy <joshknnd1982@gmail.com>
 * GitHub: <https://github.com/joshknnd1982>
 * Requires: NVDA 2026.1 or later, Windows
-* Licence: GNU General Public License version 2
+* Licence: MIT License
 
 ## What it does
 
@@ -187,5 +187,4 @@ build.py                           builds the .nvda-addon package
 
 ## Licence
 
-Copyright (C) 2026 Josh Kennedy. Released under the GNU General Public License
-version 2. See [LICENSE](LICENSE).
+Copyright (C) 2026 Josh Kennedy. Released under the MIT License. See [LICENSE](LICENSE).

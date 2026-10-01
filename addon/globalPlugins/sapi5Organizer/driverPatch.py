@@ -1,7 +1,7 @@
 # -*- coding: UTF-8 -*-
 # SAPI5 Organizer, a global plugin for NVDA.
 # Copyright (C) 2026 Josh Kennedy.
-# This file is covered by the GNU General Public License version 2.
+# This file is covered by the MIT License.
 # See the file LICENSE for more details.
 
 """Adds SAPI engine, language and voice variant settings to NVDA's SAPI5 drivers.
